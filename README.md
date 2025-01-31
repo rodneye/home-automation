@@ -3,6 +3,7 @@
 This repo is dedicated to my home automation setup , docker files and knowledge.
 
 ## Portainer Setup
+
 Run the below on your hardware of choice to deploy portainer.
 
 ```
@@ -12,3 +13,9 @@ Once running connect to the container IP and Port (8000) format `http://IP:PORT`
 
 More info: `https://docs.portainer.io/start/install-ce/server/docker/linux`
 
+## Use the service yml files to deploy the stacks in portainer
+
+"NOTE !!! below files need to be edited on the host"
+- alert.rules
+- alertmanager-config.yml
+- prometheus.yml
