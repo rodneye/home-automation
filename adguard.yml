@@ -1,0 +1,28 @@
+---
+version: '3.3'
+services:
+  adguardhome:
+    image: adguard/adguardhome
+    container_name: adguardhome
+    cap_add:
+      - NET_ADMIN
+    network_mode: "host"
+    ports:
+      - 0.0.0.0:53:53/tcp
+      - 0.0.0.0:53:53/udp
+      - 0.0.0.0:6080:80/tcp
+      - 0.0.0.0:6443:443/tcp
+      - 0.0.0.0:6443:443/udp
+      - 0.0.0.0:3000:3000/tcp
+      - 0.0.0.0:853:853/tcp
+      - 0.0.0.0:853:853/udp
+      - 0.0.0.0:67:67/udp
+      - 0.0.0.0:68:68/udp
+      - 0.0.0.0:784:784/udp
+      - 0.0.0.0:8853:8853/udp
+      - 0.0.0.0:5443:5443/tcp
+      - 0.0.0.0:5443:5443/udp
+    volumes:
+      - /var/lib/docker/custom-docker-configs/adguard/adguard_data:/opt/adguardhome/work
+      - /var/lib/docker/custom-docker-configs/adguard/adguard_config:/opt/adguardhome/conf
+    restart: unless-stopped
