@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  dind:
+    image: docker:dind
+    privileged: true
+    restart: always
+    environment:
+      - DOCKER_TLS_CERTDIR=
+    volumes:
+      - dind-storage:/var/lib/docker
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "6080:80/tcp"
+      - "6443:6443/tcp"
+      - "6443:6443/udp"
+      - "3000:3000/tcp"
+      - "853:853/tcp"
+      - "853:853/udp"
+      - "67:67/udp"
+      - "68:68/udp"
+      - "784:784/udp"
+      - "8853:8853/udp"
+      - "5443:5443/tcp"
+      - "5443:5443/udp"
+      - "8780:8080"
+      - "8090:80"
+      - "8123:8123"
+      - "9093:9093"
+      - "9090:9090"
+      - "9798:9798"
+      - "3001:3001"
+      - "9115:9115"
+      - "80:80"
+      - "443:443"
+      - "81:81"
+      - "3306:3306"
+
+volumes:
+  dind-storage:

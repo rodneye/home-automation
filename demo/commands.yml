@@ -1,0 +1,183 @@
+# Run
+docker-compose up -d
+docker exec -it demo-dind-1 sh
+
+# Run
+mkdir -p /opt/dind-services && cd /opt/dind-services && touch docker-compose.yml 
+mkdir -p custom-docker-configs
+touch /custom-docker-configs/prometheus.yml 
+touch /custom-docker-configs/alertmanager-config.yml 
+chown 1000:1000 /custom-docker-configs/prometheus.yml 
+chmod 644 /custom-docker-configs/prometheus.yml 
+mkdir -p /custom-docker-configs/config 
+chmod -R 777 custom-docker-configs/config 
+
+# Edit
+vi docker-compose.yml 
+
+version: '3.8'
+
+services:
+  adguardhome:
+    image: adguard/adguardhome
+    container_name: adguardhome
+    cap_add:
+      - NET_ADMIN
+    network_mode: "host"
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "6080:80/tcp"
+      - "6443:6443/tcp"
+      - "6443:6443/udp"
+      - "3000:3000/tcp"
+      - "853:853/tcp"
+      - "853:853/udp"
+      - "67:67/udp"
+      - "68:68/udp"
+      - "784:784/udp"
+      - "8853:8853/udp"
+      - "5443:5443/tcp"
+      - "5443:5443/udp"
+    volumes:
+      - /custom-docker-configs/adguard/adguard_data:/opt/adguardhome/work
+      - /custom-docker-configs/adguard/adguard_config:/opt/adguardhome/conf
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    volumes:
+      - "/:/rootfs:ro"
+      - "/var/run:/var/run:rw"
+      - "/sys:/sys"
+      - "/var/lib/docker/:/var/lib/docker:ro"
+      - "/dev/disk/:/dev/disk:ro"
+    ports:
+      - "8780:8080"
+    restart: unless-stopped
+
+  heimdall:
+    image: linuxserver/heimdall
+    container_name: heimdall
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Africa/Johannesburg
+    volumes:
+      - /path/to/appdata/config:/config
+    ports:
+      - "8090:80"  
+    restart: unless-stopped
+
+  homeassistant:
+    container_name: homeassistant
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    ports:
+      - "8123:8123"
+    volumes:
+      - /homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
+
+  alertmanager:
+    image: prom/alertmanager
+    container_name: alertmanager
+    ports:
+      - "9093:9093"
+    restart: unless-stopped
+    volumes:
+      - "/custom-docker-configs/alertmanager-config.yml:/etc/alertmanager/alertmanager.yml"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - "/custom-docker-configs/prometheus.yml:/etc/prometheus/prometheus.yml"
+      - "/custom-docker-configs/alert.rules:/etc/prometheus/alert.rules"
+      - "prometheus_data:/prometheus"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  speedtest-exporter:
+    image: miguelndecarvalho/speedtest-exporter
+    container_name: speedtest-exporter
+    ports:
+      - "9798:9798"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    restart: unless-stopped
+    environment:
+      - PUID=472
+      - PGID=472
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+    volumes:
+      - grafana-storage:/var/lib/grafana
+
+  blackbox:
+    image: prom/blackbox-exporter
+    container_name: blackbox
+    ports:
+      - "9115:9115"
+    restart: unless-stopped
+
+  # nginx-proxy-manager:
+  #   image: 'jc21/nginx-proxy-manager:latest'
+  #   container_name: nginx-proxy-manager
+  #   restart: always
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #     - "81:81"
+  #   environment:
+  #     DB_MYSQL_HOST: db
+  #     DB_MYSQL_PORT: 3306
+  #     DB_MYSQL_USER: "npm"
+  #     DB_MYSQL_PASSWORD: "SET-PASSWORD"
+  #     DB_MYSQL_NAME: "npm"
+  #   volumes:
+  #     - "./data/app/:/data"
+  #     - "./letsencrypt:/etc/letsencrypt"
+  #   depends_on:
+  #     - db
+
+  # db:
+  #   image: 'jc21/mariadb-aria:latest'
+  #   container_name: mariadb
+  #   restart: always
+  #   ports:
+  #     - "3306:3306"
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: 'npm'
+  #     MYSQL_DATABASE: 'npm'
+  #     MYSQL_USER: 'npm'
+  #     MYSQL_PASSWORD: 'SET-PASSWORD'
+  #   volumes:
+  #     - "./data/mysql:/var/lib/mysql"
+
+volumes:
+  prometheus_data:
+  grafana-storage:
+
+
+
+# Hosts
+# http://localhost:9090/alerts
+# http://localhost:3001/dashboards
+# http://localhost:9093/#/silences
+# http://localhost:8123/onboarding.html
+# http://localhost:3000/install.html
+# 
