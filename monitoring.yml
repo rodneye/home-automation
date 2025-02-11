@@ -7,15 +7,15 @@ services:
       - 9093:9093
     restart: unless-stopped
     volumes:
-      - '/var/lib/docker/custom-docker-configs/alertmanager-config.yml:/etc/alertmanager/alertmanager.yml'
+      - '/custom-docker-configs/alertmanager-config.yml:/etc/alertmanager/alertmanager.yml'
 
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
     volumes:
-      - '/var/lib/docker/custom-docker-configs/prometheus.yml:/etc/prometheus/prometheus.yml'
-      - '/var/lib/docker/custom-docker-configs/alert.rules:/etc/prometheus/alert.rules'
-      - 'prometheus_data:/prometheus'
+      - '/custom-docker-configs/prometheus.yml:/etc/prometheus/prometheus.yml'
+      - '/custom-docker-configs/alert.rules:/etc/prometheus/alert.rules'
+      - '/custom-docker-configs/prometheus_data:/prometheus'
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'

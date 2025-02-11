@@ -1,24 +1,3 @@
-# Run
-docker-compose up -d
-docker exec -it demo-dind-1 sh
-
-# Run
-touch ./custom-docker-configs/prometheus.yml
-touch ./custom-docker-configs/alert.rules
-touch ./custom-docker-configs/alertmanager.yml
-chown 1000:1000 ./custom-docker-configs/prometheus.yml
-chmod 644 ./custom-docker-configs/prometheus.yml
-chown 1000:1000 ./custom-docker-configs/alert.rules
-chmod 644 ./custom-docker-configs/alert.rules
-chown 1000:1000 ./custom-docker-configs/alertmanager.yml
-chmod 644 ./custom-docker-configs/alertmanager.yml
-
-
-# Edit
-vi docker-compose.yml 
-
-docker-compose -p myproject up
-
 version: '3.8'
 
 services:
@@ -161,14 +140,3 @@ volumes:
     driver: local
   mimir_data:
     driver: local
-
-
-
-
-# Hosts
-# http://localhost:9090/alerts
-# http://localhost:3001/dashboards
-# http://localhost:9093/#/silences
-# http://localhost:8123/onboarding.html
-# http://localhost:3000/install.html
-# 

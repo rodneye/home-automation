@@ -9,7 +9,7 @@ services:
       - PGID=1000
       - TZ=Africa/Johannesburg
     volumes:
-      - /path/to/appdata/config:/config
+      - /custom-docker-configs/heimdall/config:/config
     ports:
       - 8090:80
     restart: unless-stopped

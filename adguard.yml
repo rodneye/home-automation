@@ -23,6 +23,6 @@ services:
       - 0.0.0.0:5443:5443/tcp
       - 0.0.0.0:5443:5443/udp
     volumes:
-      - /var/lib/docker/custom-docker-configs/adguard/adguard_data:/opt/adguardhome/work
-      - /var/lib/docker/custom-docker-configs/adguard/adguard_config:/opt/adguardhome/conf
+      - /custom-docker-configs/adguard/adguard_data:/opt/adguardhome/work
+      - /custom-docker-configs/adguard/adguard_config:/opt/adguardhome/conf
     restart: unless-stopped

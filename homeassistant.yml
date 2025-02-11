@@ -6,7 +6,7 @@ services:
     ports:
       - 8123:8123
     volumes:
-      - /homeassistant:/config
+      - /custom-docker-configs/homeassistant:/config
       - /etc/localtime:/etc/localtime:ro
       - /run/dbus:/run/dbus:ro
     restart: unless-stopped

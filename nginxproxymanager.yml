@@ -23,8 +23,8 @@ services:
       # DB_SQLITE_FILE: "/data/database.sqlite"
 
     volumes:
-      - ./data/app/:/data
-      - ./letsencrypt:/etc/letsencrypt
+      - /custom-docker-configs/nginx/data/app/:/data
+      - /custom-docker-configs/letsencrypt:/etc/letsencrypt
     depends_on:
       - db
   db:
@@ -38,4 +38,4 @@ services:
       MYSQL_USER: 'npm'
       MYSQL_PASSWORD: 'SET-PASSWORD'
     volumes:
-      - ./data/mysql:/var/lib/mysql
+      - /custom-docker-configs/mysql:/var/lib/mysql
