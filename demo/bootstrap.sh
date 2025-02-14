@@ -11,11 +11,15 @@ sleep 10
 echo "=== Bootstrapping configuration files ==="
 # Ensure the configuration directory exists
 mkdir -p /custom-docker-configs
+mkdir -p /custom-docker-configs/grafana_data
+mkdir -p /custom-docker-configs/grafana_data/plugins
 
 # Create or update config files
 touch /custom-docker-configs/prometheus.yml
 touch /custom-docker-configs/alert.rules
 touch /custom-docker-configs/alertmanager.yml
+touch /custom-docker-configs/grafana_data/grafana.db
+
 
 # Set proper ownership and permissions
 chown 1000:1000 /custom-docker-configs/prometheus.yml
@@ -26,6 +30,9 @@ chown 1000:1000 /custom-docker-configs/alertmanager.yml
 chmod 644 /custom-docker-configs/alertmanager.yml
 chown -R 65534:65534 /custom-docker-configs/prometheus_data
 chmod -R 775 /custom-docker-configs/prometheus_data
+chown -R 472:472 /custom-docker-configs/grafana_data
+#chmod -R 775 /custom-docker-configs/grafana_data
+
 
 echo "=== Writing alert.rules configuration ==="
 cat <<'EOF' > /custom-docker-configs/alert.rules

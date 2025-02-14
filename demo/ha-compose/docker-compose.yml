@@ -1,22 +1,15 @@
 version: '3.8'
 
 services:
-  otel-lgtm:
-    image: grafana/otel-lgtm
-    container_name: otel-lgtm
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
     environment:
-      - ENABLE_LOGS_ALL=true
-      - OTEL_LOGS_EXPORTER=otlp
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-lgtm:4317
+      - GF_AUTH_ANONYMOUS_ENABLED=true
     ports:
       - "3000:3000"  # web UI
-      - "4317:4317"
-      - "4318:4318"
     volumes:
-      - grafana_data:/var/lib/grafana
-      - tempo_data:/var/lib/tempo
-      - loki_data:/var/lib/loki
-      - mimir_data:/var/lib/mimir
+      - ./custom-docker-configs/grafana_data:/var/lib/grafana
     restart: unless-stopped
 
   prometheus:
