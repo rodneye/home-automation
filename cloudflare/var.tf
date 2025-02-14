@@ -5,6 +5,7 @@ variable "email" {
 
 variable "account_id" {
   description = "account_id for account stored in TF Cloud variables"
+  default = "XXXX"
 }
 
 variable "zone_id" {

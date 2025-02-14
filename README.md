@@ -15,7 +15,18 @@ More info: `https://docs.portainer.io/start/install-ce/server/docker/linux`
 
 ## Use the service yml files to deploy the stacks in portainer
 
-"NOTE !!! below files need to be edited on the host"
-- alert.rules
-- alertmanager-config.yml
-- prometheus.yml
+## Compose file is located 
+- demo/ha-compose/docker-compose.yml
+
+## For the demo
+
+## URLS
+- http://localhost:3000/?orgId=1&from=now-6h&to=now&timezone=browser
+- http://localhost:9090/query
+- http://localhost:9093/#/alerts
+- http://localhost:9115/
+- http://localhost:9798/metrics
+- http://localhost:3001/install.html
+- http://localhost:8123/onboarding.html
+- http://localhost:81/login
+
