@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Running Kubernetes at Home the Easy Way</title>
+    <style>
+      :root {
+        --bg: #07131d;
+        --panel: rgba(8, 28, 43, 0.78);
+        --panel-strong: rgba(10, 36, 56, 0.92);
+        --line: rgba(141, 213, 255, 0.2);
+        --text: #f4fbff;
+        --muted: #9fb6c7;
+        --accent: #5ce1e6;
+        --accent-2: #f7b955;
+        --accent-3: #8ff0a4;
+        --shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background:
+          radial-gradient(circle at top left, rgba(92, 225, 230, 0.18), transparent 24%),
+          radial-gradient(circle at 85% 15%, rgba(247, 185, 85, 0.12), transparent 20%),
+          linear-gradient(160deg, #041019 0%, #07131d 42%, #0b2133 100%);
+        color: var(--text);
+        font-family: "Segoe UI", "Avenir Next", sans-serif;
+      }
+
+      body {
+        overflow: hidden;
+      }
+
+      .deck-shell {
+        position: relative;
+        height: 100vh;
+        padding: 28px;
+      }
+
+      .deck-shell::before,
+      .deck-shell::after {
+        content: "";
+        position: absolute;
+        border-radius: 999px;
+        filter: blur(60px);
+        opacity: 0.45;
+        pointer-events: none;
+      }
+
+      .deck-shell::before {
+        top: 48px;
+        left: 72px;
+        width: 220px;
+        height: 220px;
+        background: rgba(92, 225, 230, 0.18);
+      }
+
+      .deck-shell::after {
+        right: 96px;
+        bottom: 48px;
+        width: 280px;
+        height: 280px;
+        background: rgba(247, 185, 85, 0.12);
+      }
+
+      .deck {
+        position: relative;
+        height: 100%;
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        background: linear-gradient(145deg, rgba(7, 20, 32, 0.85), rgba(7, 18, 28, 0.7));
+        backdrop-filter: blur(14px);
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: 24px;
+        padding: 34px 48px 52px;
+        opacity: 0;
+        transform: translateX(50px) scale(0.98);
+        transition: opacity 260ms ease, transform 260ms ease;
+        pointer-events: none;
+      }
+
+      .slide.active {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+        pointer-events: auto;
+      }
+
+      .slide.compact {
+        gap: 18px;
+      }
+
+      .slide.compact .content.two-col {
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 20px;
+      }
+
+      .topbar,
+      .footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--accent);
+        background: rgba(92, 225, 230, 0.06);
+        font-size: 0.85rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .eyebrow::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--accent);
+        box-shadow: 0 0 12px rgba(92, 225, 230, 0.6);
+      }
+
+      .slide-count {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .content {
+        display: grid;
+        gap: 28px;
+        align-content: start;
+        min-height: 0;
+      }
+
+      .hero {
+        grid-template-columns: 1.15fr 0.85fr;
+        align-items: center;
+      }
+
+      .two-col {
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+      }
+
+      .three-col {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .title {
+        margin: 0;
+        font-size: clamp(2.8rem, 5vw, 5rem);
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+        max-width: 11ch;
+      }
+
+      .title span {
+        color: var(--accent);
+      }
+
+      .subtitle,
+      .lead,
+      .copy {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .subtitle {
+        font-size: 1.15rem;
+        max-width: 58ch;
+      }
+
+      .lead {
+        font-size: 1.02rem;
+      }
+
+      .section-title {
+        margin: 0;
+        font-size: clamp(2rem, 3vw, 3rem);
+        letter-spacing: -0.03em;
+      }
+
+      .slide.compact .section-title {
+        font-size: clamp(1.7rem, 2.5vw, 2.55rem);
+      }
+
+      .section-title strong {
+        color: var(--accent-2);
+        font-weight: 700;
+      }
+
+      .panel,
+      .stat,
+      .image-card,
+      .command-card {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--panel);
+        backdrop-filter: blur(8px);
+      }
+
+      .panel {
+        padding: 24px;
+      }
+
+      .slide.compact .panel,
+      .slide.compact .command-card,
+      .slide.compact .image-card,
+      .slide.compact .step {
+        padding-top: 16px;
+        padding-bottom: 16px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 20px;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .stat {
+        padding: 18px 20px;
+      }
+
+      .stat b {
+        display: block;
+        font-size: 1.8rem;
+        color: var(--accent-3);
+        margin-bottom: 8px;
+      }
+
+      .stat span {
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      ul.clean,
+      ol.clean {
+        margin: 0;
+        padding-left: 1.2rem;
+        color: var(--text);
+        line-height: 1.65;
+      }
+
+      ul.clean li + li,
+      ol.clean li + li {
+        margin-top: 10px;
+      }
+
+      .steps {
+        counter-reset: step;
+        display: grid;
+        gap: 14px;
+      }
+
+      .step {
+        display: grid;
+        grid-template-columns: 44px 1fr;
+        gap: 14px;
+        align-items: start;
+        padding: 16px 18px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .step::before {
+        counter-increment: step;
+        content: counter(step);
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background: rgba(92, 225, 230, 0.12);
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      .step h3,
+      .panel h3,
+      .image-card h3,
+      .command-card h3 {
+        margin: 0 0 8px;
+        font-size: 1.08rem;
+      }
+
+      .step p,
+      .panel p,
+      .image-card p,
+      .command-card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .code {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 0.92rem;
+        color: #cbf6ff;
+        background: rgba(1, 14, 23, 0.86);
+        border: 1px solid rgba(92, 225, 230, 0.16);
+        border-radius: 18px;
+        padding: 18px 20px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+      }
+
+      .tag-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .tag {
+        padding: 9px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.03);
+        font-size: 0.92rem;
+      }
+
+      .image-card {
+        padding: 14px;
+        display: grid;
+        gap: 14px;
+        background: var(--panel-strong);
+      }
+
+      .image-card img {
+        width: 100%;
+        height: 240px;
+        object-fit: cover;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .slide.compact .image-card img {
+        height: 280px;
+      }
+
+      .slide.compact .steps {
+        gap: 10px;
+      }
+
+      .slide.compact .step {
+        grid-template-columns: 38px 1fr;
+        gap: 12px;
+      }
+
+      .slide.compact .step::before {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+      }
+
+      .slide.compact .step h3,
+      .slide.compact .panel h3,
+      .slide.compact .image-card h3,
+      .slide.compact .command-card h3 {
+        font-size: 1rem;
+        margin-bottom: 6px;
+      }
+
+      .slide.compact .step p,
+      .slide.compact .panel p,
+      .slide.compact .image-card p,
+      .slide.compact .command-card p,
+      .slide.compact .mini-list {
+        font-size: 0.9rem;
+        line-height: 1.4;
+      }
+
+      .command-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .command-card {
+        padding: 18px;
+      }
+
+      .callout {
+        padding: 18px 20px;
+        border-left: 4px solid var(--accent-2);
+        border-radius: 18px;
+        background: rgba(247, 185, 85, 0.08);
+        color: var(--text);
+      }
+
+      .mini-list {
+        margin: 0;
+        padding-left: 1rem;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .mini-list li + li {
+        margin-top: 8px;
+      }
+
+      .progress {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .progress-bar {
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        transition: width 220ms ease;
+      }
+
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      button.nav {
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 10px 14px;
+        cursor: pointer;
+        font: inherit;
+      }
+
+      button.nav:hover {
+        background: rgba(92, 225, 230, 0.1);
+      }
+
+      .hint {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .slide.compact .footer {
+        margin-top: -6px;
+      }
+
+      @media (max-width: 980px) {
+        body {
+          overflow: auto;
+        }
+
+        .deck-shell {
+          height: auto;
+          min-height: 100vh;
+          padding: 14px;
+        }
+
+        .deck {
+          height: auto;
+        }
+
+        .slide {
+          position: relative;
+          min-height: 100vh;
+          transform: none;
+          opacity: 1;
+          pointer-events: auto;
+          display: none;
+          padding: 28px 22px 32px;
+        }
+
+        .slide.active {
+          display: grid;
+        }
+
+        .hero,
+        .two-col,
+        .three-col,
+        .command-grid,
+        .stats {
+          grid-template-columns: 1fr;
+        }
+
+        .title {
+          max-width: none;
+          font-size: 2.6rem;
+        }
+
+        .image-card img {
+          height: 220px;
+        }
+
+        .footer {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="deck-shell">
+      <main class="deck" id="deck">
+        <section class="slide active" data-title="Overview">
+          <div class="topbar">
+            <div class="eyebrow">Talk / Presentation</div>
+            <div class="slide-count">01 / 08</div>
+          </div>
+          <div class="content hero">
+            <div class="grid">
+              <h1 class="title">Running Kubernetes at Home the <span>Easy Way</span></h1>
+              <p class="subtitle">
+                Because overcomplicating things is a lifestyle choice, but your home lab
+                still needs to be useful, manageable, and only slightly irresponsible.
+              </p>
+              <div class="tag-row">
+                <span class="tag">K3s</span>
+                <span class="tag">Traefik</span>
+                <span class="tag">Cloudflare Tunnel</span>
+                <span class="tag">Argo CD</span>
+                <span class="tag">NFS Storage</span>
+              </div>
+            </div>
+            <div class="panel">
+              <h3>Abstract</h3>
+              <ul class="clean">
+                <li>A practical and slightly painful journey into running Kubernetes at home.</li>
+                <li>K3s keeps the cluster lightweight enough to live outside a data centre fantasy.</li>
+                <li>Cloudflare and Argo CD remove a lot of the repetitive suffering.</li>
+                <li>The result mostly behaves itself, which is a better outcome than it sounds.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="footer">
+            <div class="hint">Use arrow keys or the buttons to move through the deck.</div>
+            <div class="controls">
+              <button class="nav" data-dir="-1">Previous</button>
+              <button class="nav" data-dir="1">Next</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" data-title="Cluster Design">
+          <div class="topbar">
+            <div class="eyebrow">Why This Exists</div>
+            <div class="slide-count">02 / 08</div>
+          </div>
+          <div class="content two-col">
+            <div class="grid">
+              <h2 class="section-title">The goal was not a mini cloud, just a sane home setup</h2>
+              <p class="lead">
+                This setup exists to run useful workloads at home without turning the rack, the
+                office, or the maintenance burden into a second job.
+              </p>
+              <div class="stats">
+                <div class="stat">
+                  <b>Useful</b>
+                  <span>Home automation and cluster services that are worth keeping online.</span>
+                </div>
+                <div class="stat">
+                  <b>Manageable</b>
+                  <span>Simple enough that fixing one bad evening does not create three more.</span>
+                </div>
+              </div>
+            </div>
+            <div class="grid">
+              <div class="panel">
+                <h3>Design constraints</h3>
+                <ul class="clean">
+                  <li>Low-power Raspberry Pi and Debian hardware, not enterprise gear.</li>
+                  <li>Limited appetite for manual babysitting and repeated shell archaeology.</li>
+                  <li>Remote access needed to be clean without punching holes in the house.</li>
+                  <li>Configuration had to be declarative enough to survive my own decisions.</li>
+                </ul>
+              </div>
+              <div class="panel">
+                <h3>Environment anchors</h3>
+                <ul class="mini-list">
+                  <li>Single control-plane node on the home network.</li>
+                  <li>Dedicated NFS server for persistent storage.</li>
+                  <li>Shared internal domain and Cloudflare-managed external access.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="footer">
+            <div class="hint">The README values are treated as deploy-time variables, not hardcoded rules.</div>
+            <div class="controls">
+              <button class="nav" data-dir="-1">Previous</button>
+              <button class="nav" data-dir="1">Next</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" data-title="Node Preparation">
+          <div class="topbar">
+            <div class="eyebrow">Lesson One</div>
+            <div class="slide-count">03 / 08</div>
+          </div>
+          <div class="content two-col">
+            <div class="grid">
+              <h2 class="section-title">Kubernetes is easy right up until the hosts are wrong</h2>
+              <div class="steps">
+                <div class="step">
+                  <div>
+                    <h3>Install the base packages</h3>
+                    <p>Start with boring host prep because skipping boring host prep is how you invent new problems.</p>
+                  </div>
+                </div>
+                <div class="step">
+                  <div>
+                    <h3>Disable swap</h3>
+                    <p>Turn off active swap and disable the services behind it, because Kubernetes will absolutely notice.</p>
+                  </div>
+                </div>
+                <div class="step">
+                  <div>
+                    <h3>Enable Raspberry Pi memory cgroups</h3>
+                    <p>Append `cgroup_memory=1 cgroup_enable=memory` and avoid a deeply uninteresting debugging session later.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="grid">
+              <div class="command-card">
+                <h3>Base setup</h3>
+                <ul class="mini-list">
+                  <li>Bring the node up to date.</li>
+                  <li>Install the minimum packages for K3s and NFS support.</li>
+                  <li>Keep the host layer intentionally boring.</li>
+                </ul>
+              </div>
+              <div class="command-card">
+                <h3>Critical validation</h3>
+                <ul class="mini-list">
+                  <li>Confirm swap is fully disabled.</li>
+                  <li>Confirm memory cgroups are active on Raspberry Pi nodes.</li>
+                  <li>Validate the host before blaming Kubernetes.</li>
+                </ul>
+              </div>
+              <div class="callout">
+                K3s is lightweight, not magical. Most early cluster weirdness came from the host layer being
+                slightly wrong in ways that felt harmless until they were not.
+              </div>
+            </div>
+          </div>
+          <div class="footer">
+            <div class="hint">This is the stage where you eliminate host-level drift.</div>
+            <div class="controls">
+              <button class="nav" data-dir="-1">Previous</button>
+              <button class="nav" data-dir="1">Next</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" data-title="Storage and K3s">
+          <div class="topbar">
+            <div class="eyebrow">Lesson Two</div>
+            <div class="slide-count">04 / 08</div>
+          </div>
+          <div class="content two-col">
+            <div class="grid">
+              <h2 class="section-title">Shared storage first, cluster heroics second</h2>
+              <div class="panel">
+                <h3>NFS flow</h3>
+                <ul class="clean">
+                  <li>Create `/mnt/nfs-storage` on every node that needs access.</li>
+                  <li>Mount the export from `192.168.88.100:/export/k8s-storage`.</li>
+                  <li>Validate the mount with `findmnt` and `df -h`.</li>
+                  <li>Use the NFS subdir external provisioner for dynamic PVCs.</li>
+                </ul>
+              </div>
+              <div class="panel">
+                <h3>K3s install sequence</h3>
+                <ol class="clean">
+                  <li>Install the control-plane node with the K3s bootstrap script.</li>
+                  <li>Read the join token from `/var/lib/rancher/k3s/server/node-token`.</li>
+                  <li>Join each worker with `K3S_URL` and `K3S_TOKEN`.</li>
+                </ol>
+              </div>
+            </div>
+            <div class="grid">
+              <div class="command-card">
+                <h3>Control-plane install</h3>
+                <ul class="mini-list">
+                  <li>Bootstrap a single control-plane node first.</li>
+                  <li>Verify the cluster is healthy before adding workers.</li>
+                </ul>
+              </div>
+              <div class="command-card">
+                <h3>Worker join</h3>
+                <ul class="mini-list">
+                  <li>Join workers using the control-plane endpoint and token.</li>
+                  <li>Treat workers as replaceable infrastructure.</li>
+                </ul>
+              </div>
+              <div class="command-card">
+                <h3>Dynamic storage</h3>
+                <ul class="mini-list">
+                  <li>Expose NFS into the cluster as a dynamic storage class.</li>
+                  <li>Keep persistent state off the nodes themselves.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="footer">
+            <div class="hint">Persistent storage is where “home lab” stops being a toy and starts demanding consequences.</div>
+            <div class="controls">
+              <button class="nav" data-dir="-1">Previous</button>
+              <button class="nav" data-dir="1">Next</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" data-title="Ingress and Tunnel">
+          <div class="topbar">
+            <div class="eyebrow">Lesson Three</div>
+            <div class="slide-count">05 / 08</div>
+          </div>
+          <div class="content">
+            <div class="grid">
+              <h2 class="section-title">Traefik inside, Cloudflare outside, fewer regrettable firewall ideas</h2>
+              <p class="lead">
+                The easiest remote-access win was deciding not to expose home services directly and letting the tunnel
+                carry the awkward part of the job.
+              </p>
+            </div>
+            <div class="grid three-col">
+              <div class="image-card">
+                <img src="images/cloudflare-zero-trust.png" alt="Cloudflare Zero Trust tunnel configuration" />
+                <div>
+                  <h3>Zero Trust tunnel</h3>
+                  <p>Create and authenticate the tunnel, then let Kubernetes consume the credentials as a secret.</p>
+                </div>
+              </div>
+              <div class="image-card">
+                <img src="images/cloudflare-DNS.png" alt="Cloudflare DNS route for the tunnel" />
+                <div>
+                  <h3>DNS routing</h3>
+                  <p>Bind the wildcard hostname to the tunnel so the cluster feels coherent instead of improvised.</p>
+                </div>
+              </div>
+              <div class="panel">
+                <h3>Operational pattern</h3>
+                <ul class="mini-list">
+                  <li>Create a Cloudflare Tunnel and authenticate it once.</li>
+                  <li>Store tunnel credentials in Kubernetes as a secret.</li>
+                  <li>Route the chosen domain through Cloudflare instead of opening inbound access.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="footer">
+            <div class="hint">Source IP preservation still needs `externalTrafficPolicy: Local` on Traefik.</div>
+            <div class="controls">
+              <button class="nav" data-dir="-1">Previous</button>
+              <button class="nav" data-dir="1">Next</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide compact" data-title="GitOps with Argo CD">
+          <div class="topbar">
+            <div class="eyebrow">Lesson Four</div>
+            <div class="slide-count">06 / 08</div>
+          </div>
+          <div class="content two-col">
+            <div class="image-card">
+              <img src="images/argocd.png" alt="Argo CD dashboard screenshot" />
+              <div>
+                <h3>Argo CD in the cluster</h3>
+                <p>The repo includes ingress and config so Argo CD can sit behind Traefik and stop deployment drift from becoming a hobby.</p>
+              </div>
+            </div>
+            <div class="grid">
+              <h2 class="section-title">Argo CD is where the YAML therapy becomes at least somewhat supervised</h2>
+              <div class="steps">
+                <div class="step">
+                  <div>
+                    <h3>Install the namespace and core components</h3>
+                    <p>Apply the upstream install manifest into the `argocd` namespace and get the control plane in place.</p>
+                  </div>
+                </div>
+                <div class="step">
+                  <div>
+                    <h3>Apply the local server config</h3>
+                    <p>`argocd/configmap.yaml` sets `server.insecure: "true"` so Traefik can terminate ingress cleanly.</p>
+                  </div>
+                </div>
+                <div class="step">
+                  <div>
+                    <h3>Expose the UI</h3>
+                    <p>Use `argocd/argocd-ingress.yaml`, fetch the initial admin secret, and start managing apps from Git instead of memory.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="panel">
+                <h3>What the repo already provides</h3>
+                <ul class="mini-list">
+                  <li>Namespace-scoped Argo CD installation guidance.</li>
+                  <li>Ingress configuration for Traefik.</li>
+                  <li>ConfigMap settings for running behind the ingress layer.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="footer">
+            <div class="hint">Once Argo CD is live, cluster apps stop being ad hoc shell history and become declarative state.</div>
+            <div class="controls">
+              <button class="nav" data-dir="-1">Previous</button>
+              <button class="nav" data-dir="1">Next</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" data-title="Operations">
+          <div class="topbar">
+            <div class="eyebrow">What Broke</div>
+            <div class="slide-count">07 / 08</div>
+          </div>
+          <div class="content">
+            <div class="grid">
+              <h2 class="section-title">What needed checking, what kept going sideways</h2>
+              <p class="lead">
+                The cluster is small enough to understand quickly, but only if the checks are routine and the failure
+                modes are treated like engineering rather than vibes.
+              </p>
+            </div>
+            <div class="command-grid">
+              <div class="command-card">
+                <h3>Cluster health</h3>
+                <ul class="mini-list">
+                  <li>Know which nodes are healthy.</li>
+                  <li>Know which workloads are actually running.</li>
+                </ul>
+              </div>
+              <div class="command-card">
+                <h3>K3s services</h3>
+                <ul class="mini-list">
+                  <li>Separate control-plane issues from worker issues quickly.</li>
+                  <li>Keep service-level failures visible and obvious.</li>
+                </ul>
+              </div>
+              <div class="command-card">
+                <h3>NFS verification</h3>
+                <ul class="mini-list">
+                  <li>Verify that storage is mounted where you expect it.</li>
+                  <li>Assume broken storage before assuming broken apps.</li>
+                </ul>
+              </div>
+              <div class="command-card">
+                <h3>Troubleshooting trail</h3>
+                <ul class="mini-list">
+                  <li>Follow service logs first.</li>
+                  <li>Use host diagnostics when the problem smells lower-level.</li>
+                </ul>
+              </div>
+            </div>
+            <div class="callout">
+              The recurring lesson was simple: disposable workers are fine, hidden state is not. If a node matters,
+              its data should already live somewhere else.
+            </div>
+          </div>
+          <div class="footer">
+            <div class="hint">This stack stays maintainable because the failure domains are small and visible.</div>
+            <div class="controls">
+              <button class="nav" data-dir="-1">Previous</button>
+              <button class="nav" data-dir="1">Next</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide" data-title="Summary">
+          <div class="topbar">
+            <div class="eyebrow">Takeaways</div>
+            <div class="slide-count">08 / 08</div>
+          </div>
+          <div class="content hero">
+            <div class="grid">
+              <h2 class="section-title">Useful, manageable, and just dangerous enough to be fun</h2>
+              <ul class="clean">
+                <li>K3s is enough Kubernetes for a home setup without the full self-inflicted drama.</li>
+                <li>Cloudflare Tunnel is a better answer than exposing random services to the internet.</li>
+                <li>Argo CD makes repeated change less fragile and much less dependent on memory.</li>
+                <li>The best home clusters are the ones you can still tolerate operating on a weeknight.</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <h3>Talk landing point</h3>
+              <p>
+                This is not a perfect platform and that is part of the point. It is a practical stack built from
+                real tradeoffs, mildly painful lessons, and tools that reduce unnecessary complexity without pretending
+                complexity disappears.
+              </p>
+              <div class="panel" style="margin-top: 18px; padding: 16px 18px;">
+                <h3>Follow-up</h3>
+                <p>The repo carries the implementation detail. The presentation only keeps the architecture, lessons, and tradeoffs.</p>
+              </div>
+            </div>
+          </div>
+          <div class="footer">
+            <div class="hint">Open this file in a browser for presentation mode.</div>
+            <div class="controls">
+              <button class="nav" data-dir="-1">Previous</button>
+              <button class="nav" data-dir="1">Restart</button>
+            </div>
+          </div>
+        </section>
+
+        <div class="progress" aria-hidden="true">
+          <div class="progress-bar" id="progress-bar"></div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const progressBar = document.getElementById("progress-bar");
+      const navButtons = document.querySelectorAll("button.nav");
+      let current = 0;
+
+      function renderSlide(index) {
+        current = (index + slides.length) % slides.length;
+        slides.forEach((slide, slideIndex) => {
+          slide.classList.toggle("active", slideIndex === current);
+        });
+        progressBar.style.width = `${((current + 1) / slides.length) * 100}%`;
+      }
+
+      navButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const direction = Number(button.dataset.dir || 1);
+          renderSlide(current + direction);
+        });
+      });
+
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowRight" || event.key === "PageDown" || event.key === " ") {
+          event.preventDefault();
+          renderSlide(current + 1);
+        }
+        if (event.key === "ArrowLeft" || event.key === "PageUp") {
+          event.preventDefault();
+          renderSlide(current - 1);
+        }
+        if (event.key === "Home") {
+          event.preventDefault();
+          renderSlide(0);
+        }
+        if (event.key === "End") {
+          event.preventDefault();
+          renderSlide(slides.length - 1);
+        }
+      });
+
+      renderSlide(0);
+    </script>
+  </body>
+</html>
