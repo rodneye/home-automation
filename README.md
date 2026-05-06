@@ -44,8 +44,6 @@ NFS exports expected on the NFS server:
 /export/k8s-storage
 ```
 
-> Do not commit your real K3s node token to GitHub. Treat it as a secret.
-
 ---
 
 # 1. Base setup for all nodes
@@ -458,9 +456,66 @@ kubectl get storageclass
 kubectl get pods -A | grep nfs
 ```
 
-# 14. Quick setup commands
+---
 
-## 14.1 Control-plane quick setup
+# 12. Install Argo CD
+
+Create the namespace and install Argo CD:
+
+```bash
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+```
+
+If you want to manage Argo CD with Helm later, add the repo first:
+
+```bash
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
+```
+
+Apply the local config that allows the Argo CD server to run insecure behind Traefik:
+
+```bash
+kubectl apply -f argocd/configmap.yaml
+kubectl -n argocd rollout restart deployment argocd-server
+```
+
+Apply the ingress:
+
+```bash
+kubectl apply -n argocd -f argocd/argocd-ingress.yaml
+```
+
+The ingress manifest currently uses:
+
+```text
+argocd.ellishome.co.za
+```
+
+Update `argocd/argocd-ingress.yaml` if your domain is different.
+
+If you prefer Helm for updating the server params, you can also run:
+
+```bash
+helm upgrade argocd argo/argo-cd \
+  --namespace argocd \
+  --reuse-values \
+  --set configs.params."server.insecure"="true"
+```
+
+Get the initial admin password:
+
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d ; echo
+```
+
+---
+
+# 13. Quick setup commands
+
+## 13.1 Control-plane quick setup
 
 Run this on the control-plane node.
 
@@ -514,7 +569,7 @@ sudo cat /var/lib/rancher/k3s/server/node-token
 kubectl get nodes -o wide
 ```
 
-## 14.2 Worker quick setup
+## 13.2 Worker quick setup
 
 Run this on each worker node.
 
@@ -586,7 +641,7 @@ Performance Options -> Overlay File System
 
 ---
 
-# 15. Troubleshooting
+# 14. Troubleshooting
 
 ## Check node health
 
@@ -651,7 +706,7 @@ mount | grep overlay || true
 
 ---
 
-# 16. References
+# 15. References
 
 - K3s install script: https://get.k3s.io
 - K3s install notes: https://github.com/filip-lebiecki/k3s-install

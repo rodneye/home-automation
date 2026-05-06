@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+spec:
+  selector:
+    matchLabels:
+      app: cloudflared
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: cloudflared
+    spec:
+      containers:
+      - name: cloudflared
+        image: cloudflare/cloudflared:latest
+        args:
+        - tunnel
+        - --config
+        - /etc/cloudflared/config/config.yaml
+        - run
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: 2000
+          failureThreshold: 1
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        volumeMounts:
+        - name: config
+          mountPath: /etc/cloudflared/config
+          readOnly: true
+        - name: creds
+          mountPath: /etc/cloudflared/creds
+          readOnly: true
+      volumes:
+      - name: creds
+        secret:
+          secretName: tunnel-credentials
+      - name: config
+        configMap:
+          name: cloudflared
+          items:
+          - key: config.yaml
+            path: config.yaml
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared
+data:
+  config.yaml: |
+    tunnel: my-tunnel
+    credentials-file: /etc/cloudflared/creds/credentials.json
+    metrics: 0.0.0.0:2000
+    protocol: http2
+    no-autoupdate: true
+
+    ingress:
+      - hostname: pihole.ellishome.co.za
+        service: https://192.168.88.219:443
+        originRequest:
+          noTLSVerify: true
+
+      - hostname: homeassistant.ellishome.co.za
+        service: http://192.168.88.219:8123
+
+      - hostname: openmediavault.ellishome.co.za
+        service: http://192.168.88.100:80
+
+      - hostname: octoprint.ellishome.co.za
+        service: http://192.168.88.145:5000
+
+      - hostname: portainer.ellishome.co.za
+        service: https://192.168.88.219:9443
+        originRequest:
+          noTLSVerify: true
+
+      - hostname: "*.ellishome.co.za"
+        service: http://traefik.kube-system.svc.cluster.local:80
+
+      - service: http_status:404
