@@ -86,8 +86,8 @@
         inset: 0;
         display: grid;
         grid-template-rows: auto minmax(0, 1fr) auto;
-        gap: 24px;
-        padding: 34px 48px 52px;
+        gap: 20px;
+        padding: 32px 48px 38px;
         opacity: 0;
         transform: translateX(50px) scale(0.98);
         transition: opacity 260ms ease, transform 260ms ease;
@@ -109,12 +109,20 @@
         gap: 20px;
       }
 
-      .topbar,
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
       .footer {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 16px;
+        border-top: 1px solid var(--line);
+        padding-top: 16px;
       }
 
       .eyebrow {
@@ -147,23 +155,49 @@
 
       .content {
         display: grid;
-        gap: 28px;
+        gap: 22px;
         align-content: start;
         min-height: 0;
       }
 
       .hero {
-        grid-template-columns: 1.15fr 0.85fr;
+        grid-template-columns: 1.3fr 0.7fr;
         align-items: center;
+        gap: 32px;
       }
 
       .two-col {
         grid-template-columns: 1fr 1fr;
         align-items: start;
+        gap: 24px;
+      }
+
+      .two-col-wide {
+        grid-template-columns: 1.2fr 0.8fr;
+        align-items: start;
+        gap: 24px;
       }
 
       .three-col {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      /* Horizontal step cards — break the monotony on lesson slides */
+      .steps-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        counter-reset: step;
+      }
+
+      .steps-row .step {
+        grid-template-columns: 1fr;
+        align-items: start;
+        padding: 20px;
+      }
+
+      .steps-row .step::before {
+        margin-bottom: 4px;
       }
 
       .title {
@@ -469,7 +503,7 @@
       }
 
       .slide.compact .footer {
-        margin-top: -6px;
+        padding-top: 12px;
       }
 
       @media (max-width: 980px) {
@@ -503,9 +537,11 @@
 
         .hero,
         .two-col,
+        .two-col-wide,
         .three-col,
         .command-grid,
-        .stats {
+        .stats,
+        .steps-row {
           grid-template-columns: 1fr;
         }
 
@@ -531,7 +567,7 @@
         <section class="slide active" data-title="Overview">
           <div class="topbar">
             <div class="eyebrow">Talk / Presentation</div>
-            <div class="slide-count">01 / 08</div>
+            <div class="slide-count">01 / 09</div>
           </div>
           <div class="content hero">
             <div class="grid">
@@ -567,18 +603,65 @@
           </div>
         </section>
 
+        <section class="slide" data-title="The Hardware">
+          <div class="topbar">
+            <div class="eyebrow">The Physical Reality</div>
+            <div class="slide-count">02 / 09</div>
+          </div>
+          <div class="content">
+            <h2 class="section-title">Five Raspberry Pis in a rack, doing their best</h2>
+            <div class="content two-col" style="gap: 20px;">
+              <div class="image-card">
+                <img src="images/server-rack-closed.png" alt="Server rack, closed" style="height: 280px;" />
+                <div>
+                  <h3>The rack, closed</h3>
+                  <p>The case is clear acrylic. Closing it changes nothing. The cables are fully visible from every direction at all times and that is simply the situation.</p>
+                </div>
+              </div>
+              <div class="image-card">
+                <img src="images/server-rack-open.png" alt="Server rack, open" style="height: 280px;" />
+                <div>
+                  <h3>The rack, open</h3>
+                  <p>The Pis are in there. The cables are also in there. Opening the door mostly just removes the last pretence that anything is under control.</p>
+                </div>
+              </div>
+            </div>
+            <div class="callout">
+              The cable management is not hidden by the closed panel because the panel is transparent acrylic. This was a choice made by the rack manufacturer. It was adopted by the cluster owner with full awareness of the consequences and no intention of addressing them.
+            </div>
+          </div>
+          <div class="footer">
+            <div class="hint">The cluster runs fine. The cables are visible through the case at all times. These two facts coexist.</div>
+            <div class="controls">
+              <button class="nav" data-dir="-1">Previous</button>
+              <button class="nav" data-dir="1">Next</button>
+            </div>
+          </div>
+        </section>
+
         <section class="slide" data-title="Cluster Design">
           <div class="topbar">
             <div class="eyebrow">Why This Exists</div>
-            <div class="slide-count">02 / 08</div>
+            <div class="slide-count">03 / 09</div>
           </div>
-          <div class="content two-col">
+          <div class="content two-col-wide">
             <div class="grid">
               <h2 class="section-title">The goal was not a mini cloud, just a sane home setup</h2>
               <p class="lead">
                 This setup exists to run useful workloads at home without turning the rack, the
                 office, or the maintenance burden into a second job.
               </p>
+              <div class="panel">
+                <h3>Design constraints</h3>
+                <ul class="clean">
+                  <li>Low-power Raspberry Pi and Debian hardware, not enterprise gear.</li>
+                  <li>Limited appetite for manual babysitting and repeated shell archaeology.</li>
+                  <li>Remote access needed to be clean without punching holes in the house.</li>
+                  <li>Configuration had to be declarative enough to survive my own decisions.</li>
+                </ul>
+              </div>
+            </div>
+            <div class="grid">
               <div class="stats">
                 <div class="stat">
                   <b>Useful</b>
@@ -588,17 +671,6 @@
                   <b>Manageable</b>
                   <span>Simple enough that fixing one bad evening does not create three more.</span>
                 </div>
-              </div>
-            </div>
-            <div class="grid">
-              <div class="panel">
-                <h3>Design constraints</h3>
-                <ul class="clean">
-                  <li>Low-power Raspberry Pi and Debian hardware, not enterprise gear.</li>
-                  <li>Limited appetite for manual babysitting and repeated shell archaeology.</li>
-                  <li>Remote access needed to be clean without punching holes in the house.</li>
-                  <li>Configuration had to be declarative enough to survive my own decisions.</li>
-                </ul>
               </div>
               <div class="panel">
                 <h3>Environment anchors</h3>
@@ -622,33 +694,31 @@
         <section class="slide" data-title="Node Preparation">
           <div class="topbar">
             <div class="eyebrow">Lesson One</div>
-            <div class="slide-count">03 / 08</div>
+            <div class="slide-count">04 / 09</div>
           </div>
-          <div class="content two-col">
-            <div class="grid">
-              <h2 class="section-title">Kubernetes is easy right up until the hosts are wrong</h2>
-              <div class="steps">
-                <div class="step">
-                  <div>
-                    <h3>Install the base packages</h3>
-                    <p>Start with boring host prep because skipping boring host prep is how you invent new problems.</p>
-                  </div>
+          <div class="content">
+            <h2 class="section-title">Kubernetes is easy right up until the hosts are wrong</h2>
+            <div class="steps-row">
+              <div class="step">
+                <div>
+                  <h3>Install the base packages</h3>
+                  <p>Start with boring host prep because skipping boring host prep is how you invent new problems.</p>
                 </div>
-                <div class="step">
-                  <div>
-                    <h3>Disable swap</h3>
-                    <p>Turn off active swap and disable the services behind it, because Kubernetes will absolutely notice.</p>
-                  </div>
+              </div>
+              <div class="step">
+                <div>
+                  <h3>Disable swap</h3>
+                  <p>Turn off active swap and disable the services behind it, because Kubernetes will absolutely notice.</p>
                 </div>
-                <div class="step">
-                  <div>
-                    <h3>Enable Raspberry Pi memory cgroups</h3>
-                    <p>Append `cgroup_memory=1 cgroup_enable=memory` and avoid a deeply uninteresting debugging session later.</p>
-                  </div>
+              </div>
+              <div class="step">
+                <div>
+                  <h3>Enable Raspberry Pi memory cgroups</h3>
+                  <p>Append `cgroup_memory=1 cgroup_enable=memory` and avoid a deeply uninteresting debugging session later.</p>
                 </div>
               </div>
             </div>
-            <div class="grid">
+            <div class="content two-col" style="gap: 16px;">
               <div class="command-card">
                 <h3>Base setup</h3>
                 <ul class="mini-list">
@@ -665,10 +735,10 @@
                   <li>Validate the host before blaming Kubernetes.</li>
                 </ul>
               </div>
-              <div class="callout">
-                K3s is lightweight, not magical. Most early cluster weirdness came from the host layer being
-                slightly wrong in ways that felt harmless until they were not.
-              </div>
+            </div>
+            <div class="callout">
+              K3s is lightweight, not magical. Most early cluster weirdness came from the host layer being
+              slightly wrong in ways that felt harmless until they were not.
             </div>
           </div>
           <div class="footer">
@@ -683,7 +753,7 @@
         <section class="slide" data-title="Storage and K3s">
           <div class="topbar">
             <div class="eyebrow">Lesson Two</div>
-            <div class="slide-count">04 / 08</div>
+            <div class="slide-count">05 / 09</div>
           </div>
           <div class="content two-col">
             <div class="grid">
@@ -731,7 +801,7 @@
             </div>
           </div>
           <div class="footer">
-            <div class="hint">Persistent storage is where “home lab” stops being a toy and starts demanding consequences.</div>
+            <div class="hint">Persistent storage is where "home lab" stops being a toy and starts demanding consequences.</div>
             <div class="controls">
               <button class="nav" data-dir="-1">Previous</button>
               <button class="nav" data-dir="1">Next</button>
@@ -742,7 +812,7 @@
         <section class="slide" data-title="Ingress and Tunnel">
           <div class="topbar">
             <div class="eyebrow">Lesson Three</div>
-            <div class="slide-count">05 / 08</div>
+            <div class="slide-count">06 / 09</div>
           </div>
           <div class="content">
             <div class="grid">
@@ -789,7 +859,7 @@
         <section class="slide compact" data-title="GitOps with Argo CD">
           <div class="topbar">
             <div class="eyebrow">Lesson Four</div>
-            <div class="slide-count">06 / 08</div>
+            <div class="slide-count">07 / 09</div>
           </div>
           <div class="content two-col">
             <div class="image-card">
@@ -843,15 +913,19 @@
         <section class="slide" data-title="Operations">
           <div class="topbar">
             <div class="eyebrow">What Broke</div>
-            <div class="slide-count">07 / 08</div>
+            <div class="slide-count">08 / 09</div>
           </div>
-          <div class="content">
+          <div class="content two-col">
             <div class="grid">
               <h2 class="section-title">What needed checking, what kept going sideways</h2>
               <p class="lead">
                 The cluster is small enough to understand quickly, but only if the checks are routine and the failure
                 modes are treated like engineering rather than vibes.
               </p>
+              <div class="callout">
+                The recurring lesson was simple: disposable workers are fine, hidden state is not. If a node matters,
+                its data should already live somewhere else.
+              </div>
             </div>
             <div class="command-grid">
               <div class="command-card">
@@ -883,10 +957,6 @@
                 </ul>
               </div>
             </div>
-            <div class="callout">
-              The recurring lesson was simple: disposable workers are fine, hidden state is not. If a node matters,
-              its data should already live somewhere else.
-            </div>
           </div>
           <div class="footer">
             <div class="hint">This stack stays maintainable because the failure domains are small and visible.</div>
@@ -900,7 +970,7 @@
         <section class="slide" data-title="Summary">
           <div class="topbar">
             <div class="eyebrow">Takeaways</div>
-            <div class="slide-count">08 / 08</div>
+            <div class="slide-count">09 / 09</div>
           </div>
           <div class="content hero">
             <div class="grid">
