@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: whoami-persistent-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nfs-client
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whoami-persistent
+  labels:
+    app: whoami-persistent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: whoami-persistent
+  template:
+    metadata:
+      labels:
+        app: whoami-persistent
+    spec:
+      containers:
+        - name: whoami
+          image: traefik/whoami
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: whoami-storage
+              mountPath: /data
+      volumes:
+        - name: whoami-storage
+          persistentVolumeClaim:
+            claimName: whoami-persistent-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: whoami-persistent
+  labels:
+    app: whoami-persistent
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    app: whoami-persistent
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: whoami-persistent-ingress
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: whoami-persistent.<your-domain>.co.za
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: whoami-persistent
+                port:
+                  number: 80
