@@ -20,8 +20,6 @@ This README assumes:
 - NFS is used for persistent Kubernetes storage
 - The control-plane node IP is `192.168.88.213`
 - The NFS server IP is `192.168.88.100`
-- Worker nodes may optionally use Raspberry Pi overlay filesystem to reduce corruption risk after power loss
-
 Adjust the values below for your environment.
 
 ---
@@ -131,9 +129,12 @@ Swap: 0B
 
 ---
 
-# 3. Enable cgroups on Raspberry Pi
+# 3. Update Raspberry Pi boot args
 
 On Raspberry Pi nodes, K3s needs memory cgroups enabled.
+
+If you boot from a USB SSD and see unstable storage behavior, disconnects, or UAS-related issues, also add a
+`usb-storage.quirks=` entry for the disk.
 
 Edit:
 
@@ -147,7 +148,51 @@ Add this to the end of the existing single line:
 cgroup_memory=1 cgroup_enable=memory
 ```
 
+If your USB SSD needs quirks, append the quirk on the same line as well:
+
+```text
+cgroup_memory=1 cgroup_enable=memory usb-storage.quirks=<VENDOR_ID>:<PRODUCT_ID>:u
+```
+
+Example:
+
+```text
+cgroup_memory=1 cgroup_enable=memory usb-storage.quirks=174c:55aa:u
+```
+
 The file must remain a single line.
+
+To identify the correct USB disk:
+
+1. Run `lsusb` to get the USB vendor and product ID in the form `<vendor>:<product>`.
+2. Run `lsusb -t` to confirm which attached storage device is using UAS or `usb-storage`.
+3. Use the `<vendor>:<product>` value from `lsusb` in `usb-storage.quirks=<vendor>:<product>:u`.
+
+Example:
+
+```bash
+lsusb
+lsusb -t
+```
+
+Example `lsusb` output:
+
+```text
+Bus 002 Device 003: ID 174c:55aa ASMedia Technology Inc.
+```
+
+Example `lsusb -t` output:
+
+```text
+/:  Bus 02.Port 1: Dev 1, Class=root_hub, Driver=xhci_hcd/4p, 5000M
+    |__ Port 2: Dev 3, If 0, Class=Mass Storage, Driver=uas, 5000M
+```
+
+In that case, add:
+
+```text
+usb-storage.quirks=174c:55aa:u
+```
 
 Reboot:
 
@@ -295,67 +340,7 @@ kubectl get nodes -o wide
 
 ---
 
-# 8. Optional worker-node overlay filesystem
-
-For SSD boot, sudden power loss can corrupt the boot or root filesystem.
-
-On worker nodes only, consider enabling Raspberry Pi overlay filesystem after K3s is installed and confirmed working.
-
-```bash
-sudo raspi-config
-```
-
-Go to:
-
-```text
-Performance Options -> Overlay File System
-```
-
-Enable overlay and reboot.
-
-Check if overlay is enabled:
-
-```bash
-findmnt /
-```
-
-If overlay is active, you should see something like:
-
-```text
-overlay on / type overlay
-```
-
-If overlay is disabled, you will see the real root device, for example:
-
-```text
-/dev/sda2 on / type ext4
-```
-
-Important notes:
-
-- Only enable overlay on worker nodes.
-- Do not blindly enable overlay on the control-plane node.
-- Changes made after enabling overlay may not persist after reboot.
-- NFS-backed app data will still persist because it lives off-node.
-- Worker nodes can be treated as disposable if all app data is on NFS.
-
-To disable overlay again:
-
-```bash
-sudo raspi-config
-```
-
-Then go to:
-
-```text
-Performance Options -> Overlay File System
-```
-
-Disable it and reboot.
-
----
-
-# 9. Preserve source IP through Traefik
+# 8. Preserve source IP through Traefik
 
 To preserve source IPs through Traefik, edit the Traefik service:
 
@@ -377,9 +362,9 @@ kubectl get svc traefik -n kube-system -o yaml | grep externalTrafficPolicy
 
 ---
 
-# 10. Cloudflare Tunnel
+# 9. Cloudflare Tunnel
 
-## 10.1 Install `cloudflared`
+## 9.1 Install `cloudflared`
 
 ```bash
 curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | \
@@ -392,7 +377,7 @@ sudo apt update
 sudo apt install -y cloudflared
 ```
 
-## 10.2 Authenticate and create tunnel
+## 9.2 Authenticate and create tunnel
 
 ```bash
 cloudflared tunnel login
@@ -405,7 +390,7 @@ This creates a credentials JSON file under:
 ~/.cloudflared/
 ```
 
-## 10.3 Create Kubernetes secret
+## 9.3 Create Kubernetes secret
 
 Replace `<TUNNEL_ID>` with the real tunnel credentials file name.
 
@@ -414,13 +399,13 @@ kubectl create secret generic tunnel-credentials \
   --from-file=credentials.json=$HOME/.cloudflared/<TUNNEL_ID>.json
 ```
 
-## 10.4 Deploy cloudflared
+## 9.4 Deploy cloudflared
 
 ```bash
 kubectl apply -f cloudflared.yaml
 ```
 
-## 10.5 Create DNS route
+## 9.5 Create DNS route
 
 ```bash
 cloudflared tunnel route dns my-tunnel "*.ellishome.co.za"
@@ -428,7 +413,7 @@ cloudflared tunnel route dns my-tunnel "*.ellishome.co.za"
 
 ---
 
-# 11. NFS dynamic storage provisioner
+# 10. NFS dynamic storage provisioner
 
 Add the Helm repo if it has not already been added:
 
@@ -458,7 +443,7 @@ kubectl get pods -A | grep nfs
 
 ---
 
-# 12. Install Argo CD
+# 11. Install Argo CD
 
 Create the namespace and install Argo CD:
 
@@ -513,9 +498,9 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 
 ---
 
-# 13. Quick setup commands
+# 12. Quick setup commands
 
-## 13.1 Control-plane quick setup
+## 12.1 Control-plane quick setup
 
 Run this on the control-plane node.
 
@@ -523,6 +508,20 @@ Check and adjust the variables first:
 
 ```bash
 export NFS_SERVER_IP="192.168.88.100"
+export USB_STORAGE_QUIRKS=""
+```
+
+If this Raspberry Pi boots from a USB SSD and needs quirks, first identify the disk:
+
+```bash
+lsusb
+lsusb -t
+```
+
+Then set:
+
+```bash
+export USB_STORAGE_QUIRKS="174c:55aa:u"
 ```
 
 Then run:
@@ -541,6 +540,14 @@ zram-size = 0
 EOF
 
 sudo systemctl daemon-reload
+
+if ! grep -q 'cgroup_memory=1' /boot/firmware/cmdline.txt; then
+  sudo sed -i '1 s|$| cgroup_memory=1 cgroup_enable=memory|' /boot/firmware/cmdline.txt
+fi
+
+if [ -n "${USB_STORAGE_QUIRKS}" ] && ! grep -q 'usb-storage.quirks=' /boot/firmware/cmdline.txt; then
+  sudo sed -i "1 s|$| usb-storage.quirks=${USB_STORAGE_QUIRKS}|" /boot/firmware/cmdline.txt
+fi
 
 sudo mkdir -p /mnt/nfs-storage 
 sudo chown root:root /mnt/nfs-storage 
@@ -556,7 +563,7 @@ sudo mount -a
 curl -sfL https://get.k3s.io | sh -
 ```
 
-If cgroups or zram were changed, reboot:
+Reboot after the boot-arg and swap changes:
 
 ```bash
 sudo reboot
@@ -565,11 +572,12 @@ sudo reboot
 After reboot:
 
 ```bash
+cat /proc/cmdline
 sudo cat /var/lib/rancher/k3s/server/node-token
 kubectl get nodes -o wide
 ```
 
-## 13.2 Worker quick setup
+## 12.2 Worker quick setup
 
 Run this on each worker node.
 
@@ -579,6 +587,20 @@ Check and adjust the variables first:
 export K3S_SERVER_IP="192.168.88.213"
 export K3S_NODE_TOKEN="<replace-with-token-from-control-plane>"
 export NFS_SERVER_IP="192.168.88.100"
+export USB_STORAGE_QUIRKS=""
+```
+
+If this Raspberry Pi boots from a USB SSD and needs quirks, first identify the disk:
+
+```bash
+lsusb
+lsusb -t
+```
+
+Then set:
+
+```bash
+export USB_STORAGE_QUIRKS="174c:55aa:u"
 ```
 
 Then run:
@@ -597,6 +619,14 @@ zram-size = 0
 EOF
 
 sudo systemctl daemon-reload
+
+if ! grep -q 'cgroup_memory=1' /boot/firmware/cmdline.txt; then
+  sudo sed -i '1 s|$| cgroup_memory=1 cgroup_enable=memory|' /boot/firmware/cmdline.txt
+fi
+
+if [ -n "${USB_STORAGE_QUIRKS}" ] && ! grep -q 'usb-storage.quirks=' /boot/firmware/cmdline.txt; then
+  sudo sed -i "1 s|$| usb-storage.quirks=${USB_STORAGE_QUIRKS}|" /boot/firmware/cmdline.txt
+fi
 
 sudo mkdir -p /mnt/nfs-storage
 sudo chown root:root /mnt/nfs-storage 
@@ -615,9 +645,16 @@ curl -sfL https://get.k3s.io | \
   sh -
 ```
 
+Reboot after the boot-arg and swap changes:
+
+```bash
+sudo reboot
+```
+
 Check the worker:
 
 ```bash
+cat /proc/cmdline
 sudo systemctl status k3s-agent
 ```
 
@@ -627,21 +664,9 @@ From the control-plane node:
 kubectl get nodes -o wide
 ```
 
-Optional on worker nodes only:
-
-```bash
-sudo raspi-config
-```
-
-Then enable:
-
-```text
-Performance Options -> Overlay File System
-```
-
 ---
 
-# 14. Troubleshooting
+# 13. Troubleshooting
 
 ## Check node health
 
@@ -697,16 +722,7 @@ sudo mount -t nfs 192.168.88.100:/export/k8s-storage /mnt/nfs-storage
 dmesg | tail -n 50
 ```
 
-## Check overlay filesystem status
-
-```bash
-findmnt /
-mount | grep overlay || true
-```
-
----
-
-# 15. References
+# 14. References
 
 - K3s install script: https://get.k3s.io
 - K3s install notes: https://github.com/filip-lebiecki/k3s-install
