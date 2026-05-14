@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Running Kubernetes at Home the Easy Way</title>
+    <title>k8s-home-automation</title>
     <style>
       :root {
         --bg: #07131d;
@@ -109,6 +109,10 @@
         gap: 20px;
       }
 
+      .slide.compact.hardware-slide .content.two-col {
+        grid-template-columns: 1fr 1fr;
+      }
+
       .topbar {
         display: flex;
         align-items: center;
@@ -161,7 +165,7 @@
       }
 
       .hero {
-        grid-template-columns: 1.3fr 0.7fr;
+        grid-template-columns: minmax(0, 1.45fr) minmax(520px, 0.55fr);
         align-items: center;
         gap: 32px;
       }
@@ -205,7 +209,7 @@
         font-size: clamp(2.8rem, 5vw, 5rem);
         line-height: 0.95;
         letter-spacing: -0.04em;
-        max-width: 11ch;
+        max-width: 15ch;
       }
 
       .title span {
@@ -222,7 +226,7 @@
 
       .subtitle {
         font-size: 1.15rem;
-        max-width: 58ch;
+        max-width: 64ch;
       }
 
       .lead {
@@ -400,6 +404,30 @@
         height: 280px;
       }
 
+      .dns-slide .image-card img {
+        height: 560px;
+        object-fit: contain;
+        background: rgba(255, 255, 255, 0.92);
+      }
+
+      .dns-slide .content.two-col-wide {
+        grid-template-columns: 440px minmax(0, 1fr);
+        gap: 28px;
+      }
+
+      .dns-slide .image-card {
+        width: 440px;
+        max-width: 440px;
+        justify-self: start;
+        padding: 10px;
+      }
+
+      .arch-slide .image-card img {
+        height: 320px;
+        object-fit: contain;
+        background: rgba(255, 255, 255, 0.04);
+      }
+
       .slide.compact .steps {
         gap: 10px;
       }
@@ -567,7 +595,7 @@
         <section class="slide active" data-title="Overview">
           <div class="topbar">
             <div class="eyebrow">Talk / Presentation</div>
-            <div class="slide-count">01 / 09</div>
+            <div class="slide-count">01 / 12</div>
           </div>
           <div class="content hero">
             <div class="grid">
@@ -603,35 +631,44 @@
           </div>
         </section>
 
-        <section class="slide" data-title="The Hardware">
+        <section class="slide compact" data-title="Problem and Goal">
           <div class="topbar">
-            <div class="eyebrow">The Physical Reality</div>
-            <div class="slide-count">02 / 09</div>
+            <div class="eyebrow">Why Bother</div>
+            <div class="slide-count">02 / 12</div>
           </div>
-          <div class="content">
-            <h2 class="section-title">Five Raspberry Pis in a rack, doing their best</h2>
-            <div class="content two-col" style="gap: 20px;">
-              <div class="image-card">
-                <img src="images/server-rack-closed.png" alt="Server rack, closed" style="height: 280px;" />
-                <div>
-                  <h3>The rack, closed</h3>
-                  <p>The case is clear acrylic. Closing it changes nothing. The cables are fully visible from every direction at all times and that is simply the situation.</p>
-                </div>
-              </div>
-              <div class="image-card">
-                <img src="images/server-rack-open.png" alt="Server rack, open" style="height: 280px;" />
-                <div>
-                  <h3>The rack, open</h3>
-                  <p>The Pis are in there. The cables are also in there. Opening the door mostly just removes the last pretence that anything is under control.</p>
-                </div>
+          <div class="content two-col-wide">
+            <div class="grid">
+              <h2 class="section-title">The problem was not running containers. The problem was staying sane.</h2>
+              <p class="lead">
+                Docker and Docker Compose were fine right up until the stack started growing and the
+                whole thing became a YAML hedge maze with too many places to forget something important.
+              </p>
+              <div class="callout">
+                I wanted home services that were reliable, scalable enough to grow, easier to manage,
+                and useful as a way to learn more than "restart the container and hope for the best."
               </div>
             </div>
-            <div class="callout">
-              The cable management is not hidden by the closed panel because the panel is transparent acrylic. This was a choice made by the rack manufacturer. It was adopted by the cluster owner with full awareness of the consequences and no intention of addressing them.
+            <div class="grid">
+              <div class="panel">
+                <h3>What needed to improve</h3>
+                <ul class="mini-list">
+                  <li>Reliable service hosting for things I actually use at home.</li>
+                  <li>A cleaner way to scale beyond one more Compose file.</li>
+                  <li>Operations that do not depend entirely on memory and luck.</li>
+                </ul>
+              </div>
+              <div class="panel">
+                <h3>What I wanted out of it</h3>
+                <ul class="mini-list">
+                  <li>Centralized ingress, storage, and deployment patterns.</li>
+                  <li>A platform that is easier to grow than a pile of containers.</li>
+                  <li>A good excuse to learn Kubernetes without renting a cloud identity crisis.</li>
+                </ul>
+              </div>
             </div>
           </div>
           <div class="footer">
-            <div class="hint">The cluster runs fine. The cables are visible through the case at all times. These two facts coexist.</div>
+            <div class="hint">Compose was not bad. It just stopped being the shape of the problem.</div>
             <div class="controls">
               <button class="nav" data-dir="-1">Previous</button>
               <button class="nav" data-dir="1">Next</button>
@@ -639,21 +676,100 @@
           </div>
         </section>
 
-        <section class="slide" data-title="Cluster Design">
+        <section class="slide compact arch-slide" data-title="Hardware and Architecture">
+          <div class="topbar">
+            <div class="eyebrow">The Layout</div>
+            <div class="slide-count">03 / 12</div>
+          </div>
+          <div class="content two-col-wide">
+            <div class="image-card">
+              <img src="images/k3s-arch.jpg" alt="K3s home cluster architecture diagram" />
+              <div>
+                <h3>The actual shape of it</h3>
+                <p>Users, DNS, ingress, workloads, and storage all have a clear place, which is already a major improvement over "I think that container was important."</p>
+              </div>
+            </div>
+            <div class="grid">
+              <h2 class="section-title">Small hardware, proper architecture, fewer mystery cables in software form</h2>
+              <div class="panel">
+                <h3>Core layout</h3>
+                <ul class="mini-list">
+                  <li>K3s control-plane and worker nodes run the workloads.</li>
+                  <li>Traefik handles ingress inside the cluster.</li>
+                  <li>NFS handles persistent storage outside the nodes.</li>
+                  <li>Cloudflare Tunnel fronts external access cleanly.</li>
+                </ul>
+              </div>
+              <div class="panel">
+                <h3>Why this helps</h3>
+                <ul class="mini-list">
+                  <li>Each concern has a job instead of every host doing everything badly.</li>
+                  <li>The stack is easier to reason about when something breaks.</li>
+                  <li>The architecture scales better than adding more Compose files and confidence.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="footer">
+            <div class="hint">Once the architecture is clear, the hardware mostly just has to avoid drama.</div>
+            <div class="controls">
+              <button class="nav" data-dir="-1">Previous</button>
+              <button class="nav" data-dir="1">Next</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide compact hardware-slide" data-title="The Hardware">
+          <div class="topbar">
+            <div class="eyebrow">The Physical Reality</div>
+            <div class="slide-count">04 / 12</div>
+          </div>
+          <div class="content">
+            <h2 class="section-title">Five Raspberry Pis in a rack, doing their best</h2>
+            <div class="content two-col" style="gap: 20px;">
+              <div class="image-card">
+                <img src="images/server-rack-closed.png" alt="Server rack, closed" style="height: 255px;" />
+                <div>
+                  <h3>The rack, closed</h3>
+                  <p>The cluster is small, low-power, and very obviously not pretending to be enterprise hardware. That is part of why it works.</p>
+                </div>
+              </div>
+              <div class="image-card">
+                <img src="images/server-rack-open.png" alt="Server rack, open" style="height: 255px;" />
+                <div>
+                  <h3>The rack, open</h3>
+                  <p>A control-plane node, worker nodes, shared storage, and enough cables to remind everyone this is still real infrastructure.</p>
+                </div>
+              </div>
+            </div>
+            <div class="callout">
+              The hardware is not the lesson. The lesson is that useful Kubernetes does not need a data centre, just clear roles for compute, ingress, and storage.
+            </div>
+          </div>
+          <div class="footer">
+            <div class="hint">The cluster runs fine. The cables remain visible at all times. These facts coexist.</div>
+            <div class="controls">
+              <button class="nav" data-dir="-1">Previous</button>
+              <button class="nav" data-dir="1">Next</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide compact" data-title="Cluster Design">
           <div class="topbar">
             <div class="eyebrow">Why This Exists</div>
-            <div class="slide-count">03 / 09</div>
+            <div class="slide-count">05 / 12</div>
           </div>
           <div class="content two-col-wide">
             <div class="grid">
               <h2 class="section-title">The goal was not a mini cloud, just a sane home setup</h2>
               <p class="lead">
-                This setup exists to run useful workloads at home without turning the rack, the
-                office, or the maintenance burden into a second job.
+                This setup exists to run useful workloads at home without turning the rack,
+                the office, or the maintenance burden into a second job.
               </p>
               <div class="panel">
                 <h3>Design constraints</h3>
-                <ul class="clean">
+                <ul class="mini-list">
                   <li>Low-power Raspberry Pi and Debian hardware, not enterprise gear.</li>
                   <li>Limited appetite for manual babysitting and repeated shell archaeology.</li>
                   <li>Remote access needed to be clean without punching holes in the house.</li>
@@ -677,13 +793,13 @@
                 <ul class="mini-list">
                   <li>Single control-plane node on the home network.</li>
                   <li>Dedicated NFS server for persistent storage.</li>
-                  <li>Shared internal domain and Cloudflare-managed external access.</li>
+                  <li>Shared domain and Cloudflare-managed external access.</li>
                 </ul>
               </div>
             </div>
           </div>
           <div class="footer">
-            <div class="hint">The README values are treated as deploy-time variables, not hardcoded rules.</div>
+            <div class="hint">The README values are examples, not laws of physics.</div>
             <div class="controls">
               <button class="nav" data-dir="-1">Previous</button>
               <button class="nav" data-dir="1">Next</button>
@@ -691,10 +807,10 @@
           </div>
         </section>
 
-        <section class="slide" data-title="Node Preparation">
+        <section class="slide compact" data-title="Node Preparation">
           <div class="topbar">
             <div class="eyebrow">Lesson One</div>
-            <div class="slide-count">04 / 09</div>
+            <div class="slide-count">06 / 12</div>
           </div>
           <div class="content">
             <h2 class="section-title">Kubernetes is easy right up until the hosts are wrong</h2>
@@ -737,8 +853,7 @@
               </div>
             </div>
             <div class="callout">
-              K3s is lightweight, not magical. Most early cluster weirdness came from the host layer being
-              slightly wrong in ways that felt harmless until they were not.
+              K3s is lightweight, not magical. Most early cluster weirdness came from the host layer being slightly wrong in ways that felt harmless until they were not.
             </div>
           </div>
           <div class="footer">
@@ -750,17 +865,17 @@
           </div>
         </section>
 
-        <section class="slide" data-title="Storage and K3s">
+        <section class="slide compact" data-title="Storage and K3s">
           <div class="topbar">
             <div class="eyebrow">Lesson Two</div>
-            <div class="slide-count">05 / 09</div>
+            <div class="slide-count">07 / 12</div>
           </div>
           <div class="content two-col">
             <div class="grid">
               <h2 class="section-title">Shared storage first, cluster heroics second</h2>
               <div class="panel">
                 <h3>NFS flow</h3>
-                <ul class="clean">
+                <ul class="mini-list">
                   <li>Create `/mnt/nfs-storage` on every node that needs access.</li>
                   <li>Mount the export from `192.168.88.100:/export/k8s-storage`.</li>
                   <li>Validate the mount with `findmnt` and `df -h`.</li>
@@ -769,11 +884,11 @@
               </div>
               <div class="panel">
                 <h3>K3s install sequence</h3>
-                <ol class="clean">
+                <ul class="mini-list">
                   <li>Install the control-plane node with the K3s bootstrap script.</li>
                   <li>Read the join token from `/var/lib/rancher/k3s/server/node-token`.</li>
                   <li>Join each worker with `K3S_URL` and `K3S_TOKEN`.</li>
-                </ol>
+                </ul>
               </div>
             </div>
             <div class="grid">
@@ -809,17 +924,63 @@
           </div>
         </section>
 
-        <section class="slide" data-title="Ingress and Tunnel">
+        <section class="slide compact dns-slide" data-title="DNS and Zero Trust">
+          <div class="topbar">
+            <div class="eyebrow">Lesson Two Point Five</div>
+            <div class="slide-count">08 / 12</div>
+          </div>
+          <div class="content two-col-wide">
+            <div class="image-card">
+              <img src="images/DNS-meme.jpg" alt="0 days since it was DNS meme" />
+              <div>
+                <h3>Operational truth</h3>
+                <p>DNS remains undefeated. It is either the problem or about to become the problem.</p>
+              </div>
+            </div>
+            <div class="grid">
+              <h2 class="section-title">K3s was easy. DNS was the part that wanted opinions.</h2>
+              <p class="lead">
+                I went with Cloudflare Zero Trust because I did not want DNS living in one place,
+                ingress rules in another, and my sanity filing for separation.
+              </p>
+              <div class="panel">
+                <h3>Why this route</h3>
+                <ul class="mini-list">
+                  <li>The tunnel routes traffic straight into the cluster without opening inbound access.</li>
+                  <li>DNS stays tied to the same Cloudflare setup that fronts the workloads.</li>
+                  <li>I do not have to manage public DNS separately from what the cluster is actually serving.</li>
+                </ul>
+              </div>
+              <div class="panel">
+                <h3>Security shape</h3>
+                <ul class="mini-list">
+                  <li>Access is protected with a Zero Trust application policy.</li>
+                  <li>In this case the token flow is linked back to my email identity.</li>
+                  <li>The result is private access with fewer homemade security mistakes.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="footer">
+            <div class="hint">If traffic is not arriving, it is probably DNS. If it is arriving, DNS is taking credit.</div>
+            <div class="controls">
+              <button class="nav" data-dir="-1">Previous</button>
+              <button class="nav" data-dir="1">Next</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide compact" data-title="Ingress and Tunnel">
           <div class="topbar">
             <div class="eyebrow">Lesson Three</div>
-            <div class="slide-count">06 / 09</div>
+            <div class="slide-count">09 / 12</div>
           </div>
           <div class="content">
             <div class="grid">
               <h2 class="section-title">Traefik inside, Cloudflare outside, fewer regrettable firewall ideas</h2>
               <p class="lead">
-                The easiest remote-access win was deciding not to expose home services directly and letting the tunnel
-                carry the awkward part of the job.
+                The easiest remote-access win was deciding not to expose home services directly and
+                letting the tunnel carry the awkward part of the job.
               </p>
             </div>
             <div class="grid three-col">
@@ -859,7 +1020,7 @@
         <section class="slide compact" data-title="GitOps with Argo CD">
           <div class="topbar">
             <div class="eyebrow">Lesson Four</div>
-            <div class="slide-count">07 / 09</div>
+            <div class="slide-count">10 / 12</div>
           </div>
           <div class="content two-col">
             <div class="image-card">
@@ -881,23 +1042,15 @@
                 <div class="step">
                   <div>
                     <h3>Apply the local server config</h3>
-                    <p>`argocd/configmap.yaml` sets `server.insecure: "true"` so Traefik can terminate ingress cleanly.</p>
+                    <p>`argocd/configmap.yaml` lets `argocd-server` run behind Traefik without extra drama.</p>
                   </div>
                 </div>
                 <div class="step">
                   <div>
                     <h3>Expose the UI</h3>
-                    <p>Use `argocd/argocd-ingress.yaml`, fetch the initial admin secret, and start managing apps from Git instead of memory.</p>
+                    <p>Use `argocd/argocd-ingress.yaml`, grab the initial admin secret, and start managing apps from Git instead of memory.</p>
                   </div>
                 </div>
-              </div>
-              <div class="panel">
-                <h3>What the repo already provides</h3>
-                <ul class="mini-list">
-                  <li>Namespace-scoped Argo CD installation guidance.</li>
-                  <li>Ingress configuration for Traefik.</li>
-                  <li>ConfigMap settings for running behind the ingress layer.</li>
-                </ul>
               </div>
             </div>
           </div>
@@ -910,21 +1063,20 @@
           </div>
         </section>
 
-        <section class="slide" data-title="Operations">
+        <section class="slide compact" data-title="Operations">
           <div class="topbar">
             <div class="eyebrow">What Broke</div>
-            <div class="slide-count">08 / 09</div>
+            <div class="slide-count">11 / 12</div>
           </div>
           <div class="content two-col">
             <div class="grid">
               <h2 class="section-title">What needed checking, what kept going sideways</h2>
               <p class="lead">
-                The cluster is small enough to understand quickly, but only if the checks are routine and the failure
-                modes are treated like engineering rather than vibes.
+                The cluster is small enough to understand quickly, but only if the checks are routine
+                and the failure modes are treated like engineering rather than vibes.
               </p>
               <div class="callout">
-                The recurring lesson was simple: disposable workers are fine, hidden state is not. If a node matters,
-                its data should already live somewhere else.
+                The recurring lesson was simple: disposable workers are fine, hidden state is not. If a node matters, its data should already live somewhere else.
               </div>
             </div>
             <div class="command-grid">
@@ -967,31 +1119,30 @@
           </div>
         </section>
 
-        <section class="slide" data-title="Summary">
+        <section class="slide compact" data-title="Summary">
           <div class="topbar">
             <div class="eyebrow">Takeaways</div>
-            <div class="slide-count">09 / 09</div>
+            <div class="slide-count">12 / 12</div>
           </div>
           <div class="content hero">
             <div class="grid">
               <h2 class="section-title">Useful, manageable, and just dangerous enough to be fun</h2>
               <ul class="clean">
-                <li>K3s is enough Kubernetes for a home setup without the full self-inflicted drama.</li>
-                <li>Cloudflare Tunnel is a better answer than exposing random services to the internet.</li>
-                <li>Argo CD makes repeated change less fragile and much less dependent on memory.</li>
-                <li>The best home clusters are the ones you can still tolerate operating on a weeknight.</li>
+                <li>Prepare the hosts correctly before installing Kubernetes.</li>
+                <li>Use NFS-backed storage to keep persistent state off the nodes.</li>
+                <li>Expose services through Traefik and Cloudflare Tunnel instead of direct inbound access.</li>
+                <li>Use Argo CD to move from bootstrap commands into GitOps operations.</li>
               </ul>
             </div>
             <div class="panel">
               <h3>Talk landing point</h3>
               <p>
                 This is not a perfect platform and that is part of the point. It is a practical stack built from
-                real tradeoffs, mildly painful lessons, and tools that reduce unnecessary complexity without pretending
-                complexity disappears.
+                real tradeoffs, mildly painful lessons, and tools that reduce unnecessary complexity.
               </p>
               <div class="panel" style="margin-top: 18px; padding: 16px 18px;">
                 <h3>Follow-up</h3>
-                <p>The repo carries the implementation detail. The presentation only keeps the architecture, lessons, and tradeoffs.</p>
+                <p>The repo carries the implementation detail. The presentation keeps the architecture, lessons, and tradeoffs.</p>
               </div>
             </div>
           </div>
